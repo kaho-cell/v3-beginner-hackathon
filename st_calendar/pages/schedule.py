@@ -6,7 +6,8 @@ from db import init_db, add_schedule
 init_db()
 
 st.title("📅 予定入力画面")
-
+if st.button('カレンダーに戻る'):
+    st.switch_page('st_calendar.py')
 # 入力欄
 title = st.text_input("予定の内容")
 date = st.date_input("予定の日付", value=datetime.today())
