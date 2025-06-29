@@ -5,9 +5,6 @@ import os
 import sqlite3
 from datetime import datetime
 
-# db.pyから必要な関数をインポート（もしdb.pyが別のファイルであれば）
-# from db import DB_NAME # DB_NAMEがdb.pyで定義されている場合
-# または直接データベース名を定義
 DB_NAME = "./schedule_app.db" 
 
 def get_events_from_db():
@@ -54,34 +51,13 @@ def get_events_from_db():
 # 関数を呼び出してイベントリストを取得
 if os.path.exists(DB_NAME):
     event_list = get_events_from_db()
-
+# データベースがない場合は空のリスト
 else:
     event_list = []
 
+# 遷移ボタン
 if st.button('予定を追加'):
     st.switch_page('pages/schedule.py')
-
-# event_list = []
-
-# file_path = './st_calendar/schedules.csv'
-
-# if os.path.exists(file_path):
-#     with open(file_path, encoding='utf-8') as f:
-#         reader = csv.DictReader(f)
-#         if reader.fieldnames:
-#             fieldnames = [field.lstrip('\ufeff') for field in reader.fieldnames]
-#             reader.fieldnames = fieldnames
-#         l = [row for row in reader]
-#         i = 0
-#         for e in l:
-#             event = {}
-#             event['id'] = i
-#             event['title'] = e['内容']
-#             event['start'] = e['日付'] + 'T' + e['開始時間']
-#             event['end'] = e['日付'] + 'T' + e['終了時間']
-#             event['editable'] = True
-#             event_list.append(event)
-#             i += 1
 
 options = {
     'initialView': 'dayGridMonth',
@@ -107,7 +83,7 @@ options = {
         'year': 'numeric', 'month': '2-digit', 'day': '2-digit'
     },
     'buttonText': {
-        # 各ボタンを日本語化してみる
+        # 各ボタンを日本語化
         'today': '当日',
         'month': '月ごと',
         'week': '週ごと',
@@ -119,4 +95,3 @@ options = {
 }
 
 calendar = st_calendar.calendar(events = event_list, options = options)
-# st.write(calendar)
