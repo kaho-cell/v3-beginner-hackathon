@@ -1,6 +1,5 @@
 import streamlit as st
 import streamlit_calendar as st_calendar
-import csv
 import os
 import sqlite3
 from datetime import datetime
@@ -91,7 +90,7 @@ options = {
         'list': 'リスト'
     },
     'locale': 'ja', # 日本語化する
-    'firstDay': '1', # 週の最初を月曜日(1)にする。デフォルトは日曜日(0)
+    'firstDay': '0', # 週の最初を月曜日(1)にする。デフォルトは日曜日(0)
 }
 
 calendar = st_calendar.calendar(events = event_list, options = options)
