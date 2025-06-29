@@ -54,6 +54,8 @@ def get_events_from_db():
 # 関数を呼び出してイベントリストを取得
 event_list = get_events_from_db()
 
+if st.button('予定を追加'):
+    st.switch_page('pages/schedule.py')
 
 # event_list = []
 
@@ -113,8 +115,4 @@ options = {
 }
 
 calendar = st_calendar.calendar(events = event_list, options = options)
-# calendar = st_calendar.calendar(options = options)
-st.write(calendar)
-
-if st.button('予定を追加'):
-    st.switch_page('st_calendar\pages\schedule.py')
+# st.write(calendar)
