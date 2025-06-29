@@ -8,7 +8,7 @@ from datetime import datetime
 # db.pyから必要な関数をインポート（もしdb.pyが別のファイルであれば）
 # from db import DB_NAME # DB_NAMEがdb.pyで定義されている場合
 # または直接データベース名を定義
-DB_NAME = "./schedule_app.db" #
+DB_NAME = "./schedule_app.db" 
 
 def get_events_from_db():
     conn = sqlite3.connect(DB_NAME) #
@@ -52,7 +52,11 @@ def get_events_from_db():
     return event_list
 
 # 関数を呼び出してイベントリストを取得
-event_list = get_events_from_db()
+if os.path.exists(DB_NAME):
+    event_list = get_events_from_db()
+
+else:
+    event_list = []
 
 if st.button('予定を追加'):
     st.switch_page('pages/schedule.py')
