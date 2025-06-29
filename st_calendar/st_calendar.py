@@ -47,6 +47,19 @@ def get_events_from_db():
 
     return event_list
 
+def delete_event_from_db(event_id):
+    """指定されたIDのイベントをデータベースから削除する"""
+    try:
+        conn = sqlite3.connect(DB_NAME)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM schedules WHERE id = ?", (event_id,))
+        conn.commit()
+        conn.close()
+        return True
+    except sqlite3.Error as e:
+        st.error(f"データベースエラー: {e}")
+        return False
+
 # 関数を呼び出してイベントリストを取得
 if os.path.exists(DB_NAME):
     event_list = get_events_from_db()
@@ -54,9 +67,16 @@ if os.path.exists(DB_NAME):
 else:
     event_list = []
 
+st.header('カレンダー')
+
 # 遷移ボタン
-if st.button('予定を追加'):
-    st.switch_page('pages/schedule.py')
+col1, col2 = st.columns(2)
+with col1:
+    if st.button('予定を追加'):
+        st.switch_page('pages/schedule.py')
+with col2:
+    if st.button('やりたいことリスト'):
+        st.switch_page('pages/wantto.py')
 
 options = {
     'initialView': 'dayGridMonth',
@@ -90,7 +110,43 @@ options = {
         'list': 'リスト'
     },
     'locale': 'ja', # 日本語化する
-    'firstDay': '0', # 週の最初を月曜日(1)にする。デフォルトは日曜日(0)
+    'firstDay': '0', # 週の最初を日曜日(0)にする
+    'navLinks': True,
+    'selectable': True,
+    'editable': True,
 }
 
 calendar = st_calendar.calendar(events = event_list, options = options)
+
+if calendar and 'eventClick' in calendar:
+    clicked_event_info = calendar['eventClick']['event']
+    event_id = int(clicked_event_info['id'])
+    event_title = clicked_event_info['title']
+    
+    # 終日イベントかどうかで日付のフォーマットを調整
+    if clicked_event_info['allDay']:
+        start_date = datetime.fromisoformat(clicked_event_info['start'].split('T')[0]).strftime('%Y年%m月%d日')
+        # 終日イベントの場合、endは次の日になることがあるためstartと同じ日付を表示
+        end_date = start_date
+        time_str = "終日"
+    else:
+        # FullCalendarからの戻り値はISO形式 (YYYY-MM-DDTHH:MM:SS)
+        start_dt = datetime.fromisoformat(clicked_event_info['start'])
+        end_dt = datetime.fromisoformat(clicked_event_info['end'])
+        start_date = start_dt.strftime('%Y年%m月%d日')
+        end_date = end_dt.strftime('%Y年%m月%d日')
+        time_str = f"{start_dt.strftime('%H:%M')} - {end_dt.strftime('%H:%M')}"
+
+    # st.expanderを使って詳細情報を表示
+    with st.expander(f"【予定詳細】 {event_title}", expanded=True):
+        st.write(f"**日時:** {start_date} {time_str}")
+        
+        # 削除ボタン
+        # keyをユニークにすることで、ボタンが正しく機能するようにする
+        if st.button("この予定を削除する", key=f"delete_{event_id}"):
+            if delete_event_from_db(event_id):
+                st.success(f"予定「{event_title}」を削除しました。")
+                # 画面を再読み込みしてカレンダーを更新
+                st.rerun() 
+            else:
+                st.error("予定の削除に失敗しました。")
