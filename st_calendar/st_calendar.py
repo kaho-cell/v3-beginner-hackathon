@@ -124,6 +124,12 @@ else:
 
 st.header('カレンダー')
 
+st.subheader('予定計画のアドバイス')
+with st.spinner('アドバイスを生成中...'):
+    # ここで新しいアドバイス生成関数を呼び出す
+    advice_text = generate_schedule_advice(event_list)
+    st.write(advice_text)
+
 # 遷移ボタン
 col1, col2 = st.columns(2)
 with col1:
