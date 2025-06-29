@@ -77,3 +77,19 @@ def save_all_tasks(df):
         """, (row["内容"], row["期限"], row["進行状況"], row["優先度"]))
     conn.commit()
     conn.close()
+
+def update_schedule_datetime(event_id, new_start, new_end):
+    """
+    イベントIDに基づいて、開始日時と終了日時を更新する
+    """
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE schedules
+        SET start_time = ?, end_time = ?
+        WHERE id = ?
+    """, (new_start, new_end, event_id))
+
+    conn.commit()
+    conn.close()

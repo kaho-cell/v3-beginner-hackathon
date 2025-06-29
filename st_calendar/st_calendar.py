@@ -4,6 +4,7 @@ import os
 import sqlite3
 from datetime import datetime
 import google.generativeai as genai
+from db import update_schedule_datetime
 
 DB_NAME = "./schedule_app.db" 
 
@@ -125,18 +126,35 @@ else:
 st.header('カレンダー')
 
 st.subheader('予定計画のアドバイス')
-with st.spinner('アドバイスを生成中...'):
-    # ここで新しいアドバイス生成関数を呼び出す
-    advice_text = generate_schedule_advice(event_list)
-    st.write(advice_text)
+# if st.button('アドバイスを聞く'):
+#     with st.spinner('アドバイスを生成中...'):
+#         # ここで新しいアドバイス生成関数を呼び出す
+#         advice_text = generate_schedule_advice(event_list)
+#         st.write(advice_text)
+
+# 1. st.session_stateを初期化する
+if 'advice_text' not in st.session_state:
+    st.session_state.advice_text = ""
+
+# ボタンが押されたときの処理
+if st.button('アドバイスを聞く'):
+    with st.spinner('アドバイスを生成中...'):
+        # アドバイスを生成し、st.session_stateに保存する
+        st.session_state.advice_text = generate_schedule_advice(event_list)
+
+# 2. st.session_stateに保存されたアドバイスがあれば、常に表示する
+if st.session_state.advice_text:
+    st.write(st.session_state.advice_text)
 
 # 遷移ボタン
 col1, col2 = st.columns(2)
 with col1:
     if st.button('予定を追加'):
+        st.session_state.advice_text = ""
         st.switch_page('pages/schedule.py')
 with col2:
     if st.button('やりたいことリスト'):
+        st.session_state.advice_text = ""
         st.switch_page('pages/wantto.py')
 
 options = {
@@ -236,6 +254,7 @@ if calendar and 'eventClick' in calendar:
         if st.button("この予定を削除する", key=f"delete_{event_id}"):
             if delete_event_from_db(event_id):
                 st.success(f"予定「{event_title}」を削除しました。")
+                st.session_state.advice_text = ""
                 # 画面を再読み込みしてカレンダーを更新
                 st.rerun() 
             else:
