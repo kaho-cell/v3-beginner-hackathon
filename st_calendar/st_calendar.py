@@ -3,8 +3,17 @@ import streamlit_calendar as st_calendar
 import os
 import sqlite3
 from datetime import datetime
+import google.generativeai as genai
 
 DB_NAME = "./schedule_app.db" 
+
+GEMINI_API_KEY = "AIzaSyATIO0rm9jPl_ejrxKPuIsSza3rQL6okkw" 
+
+# 正しい引数名 'api_key' を使用してGemini APIを設定
+if not GEMINI_API_KEY:
+    st.error("Gemini APIキーが設定されていません。Gemini APIを使用できません。")
+    st.stop()
+genai.configure(api_key=GEMINI_API_KEY)
 
 def get_events_from_db():
     conn = sqlite3.connect(DB_NAME) #
@@ -46,6 +55,52 @@ def get_events_from_db():
         event_list.append(event)
 
     return event_list
+
+def generate_schedule_advice(events: list) -> str:
+    """
+    与えられたイベントリストに基づいて、Gemini APIを使ってスケジュールのアドバイスを生成します。
+
+    Args:
+        events (list): データベースから取得したイベントのリスト。
+
+    Returns:
+        str: Geminiによって生成されたアドバイス。イベントがない場合はその旨を伝えるメッセージ。
+    """
+    if not events:
+        return "現在、予定が登録されていません。新しい予定を追加してみましょう！"
+
+    # イベント情報をGeminiに渡しやすいテキスト形式に整形
+    event_descriptions = []
+    for event in events:
+        title = event.get('title', '不明なイベント')
+        start = event.get('start', '不明な開始時間')
+        end = event.get('end', '不明な終了時間')
+        all_day = event.get('allDay', False)
+
+        if all_day:
+            event_descriptions.append(f"・終日イベント: **{title}** ({start})")
+        else:
+            event_descriptions.append(f"・イベント: **{title}** ({start} から {end} まで)")
+
+    # プロンプトを作成
+    prompt = f"""
+    以下の予定とタスクのリストに基づいて、効果的な時間管理、生産性向上、またはストレス軽減のための具体的なアドバイスを生成してください。
+    予定が重複している場合や、連続するイベントが多い場合など、特定の状況に合わせたアドバイスも歓迎します。
+
+    アドバイスは箇条書きや短い段落で、分かりやすく具体的に記述してください。
+
+    **現在の予定:**
+    {chr(10).join(event_descriptions)}
+
+    **アドバイス:**
+    """
+
+    try:
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        return f"アドバイスの生成中にエラーが発生しました: {e}"
 
 def delete_event_from_db(event_id):
     """指定されたIDのイベントをデータベースから削除する"""
@@ -117,6 +172,35 @@ options = {
 }
 
 calendar = st_calendar.calendar(events = event_list, options = options)
+
+if calendar and 'eventChange' in calendar:
+    
+    # 2. 正しい階層から変更後のイベント情報を取得する
+    event_info = calendar['eventChange']['event']
+    event_id = event_info['id']
+
+    # 3. タイムゾーン付きのISO形式を直接パースする
+    #    '2025-06-30T09:00:00+09:00' のような形式を正しく解釈
+    new_start_dt = datetime.fromisoformat(event_info['start'])
+    new_end_dt = datetime.fromisoformat(event_info['end'])
+
+    # 4. DB保存形式（'YYYY-MM-DD HH:MM'）に変換
+    db_start_str = new_start_dt.strftime('%Y-%m-%d %H:%M')
+    db_end_str = new_end_dt.strftime('%Y-%m-%d %H:%M')
+
+    try:
+        # データベースを更新
+        update_schedule_datetime(
+            event_id=event_id,
+            new_start=db_start_str,
+            new_end=db_end_str
+        )
+        # 変更を反映させるためにページを再実行
+        st.rerun()
+    except Exception as e:
+        st.error("データベースの更新中にエラーが発生しました。")
+        st.error(e)
+
 
 if calendar and 'eventClick' in calendar:
     clicked_event_info = calendar['eventClick']['event']
