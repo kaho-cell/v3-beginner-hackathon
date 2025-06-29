@@ -1,15 +1,36 @@
 import streamlit as st
 import streamlit_calendar as st_calendar
-import json
+import csv
+import os
 
 
 
-# event_list = []
+event_list = []
 # json_file = open('events.json', 'r')
 # event = json.load(json_file)
 
 # for e in event:
 #     event_list.append(e)
+
+file_path = './st_calendar/schedules.csv'
+
+if os.path.exists(file_path):
+    with open(file_path, encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        if reader.fieldnames:
+            fieldnames = [field.lstrip('\ufeff') for field in reader.fieldnames]
+            reader.fieldnames = fieldnames
+        l = [row for row in reader]
+        i = 0
+        for e in l:
+            event = {}
+            event['id'] = i
+            event['title'] = e['内容']
+            event['start'] = e['日付'] + 'T' + e['開始時間']
+            event['end'] = e['日付'] + 'T' + e['終了時間']
+            event['editable'] = True
+            event_list.append(event)
+            i += 1
 
 options = {
     'initialView': 'dayGridMonth',
@@ -46,6 +67,6 @@ options = {
     'firstDay': '1', # 週の最初を月曜日(1)にする。デフォルトは日曜日(0)
 }
 
-# calendar = st_calendar.calendar(events = event_list, options = options)
-calendar = st_calendar.calendar(options = options)
+calendar = st_calendar.calendar(events = event_list, options = options)
+# calendar = st_calendar.calendar(options = options)
 st.write(calendar)
